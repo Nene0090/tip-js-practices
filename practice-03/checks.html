@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8">
+    <title>ПР3 — браузерные проверки</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <h1>Проверки интерфейса</h1>
+    <p>Ниже — результаты автоматических проверок модулей.</p>
+
+    <pre id="check-results">Идёт выполнение…</pre>
+
+    <hr>
+    <h2>Проверяемое приложение (iframe)</h2>
+    <iframe id="app-frame" src="./index.html" width="100%" height="400"></iframe>
+
+    <script type="module" src="./checks/browser.checks.js"></script>
+  </body>
+</html>
