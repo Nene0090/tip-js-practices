@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Проверки ПР4</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <style>
+    .checks-toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .checks-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 6px;
+    }
+
+    .checks-item {
+      display: grid;
+      grid-template-columns: 60px 1fr;
+      gap: 8px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .checks-item[data-status="ok"] {
+      border-color: #bfe3c8;
+      background: #f3fbf5;
+    }
+
+    .checks-item[data-status="fail"] {
+      border-color: #f0c2c2;
+      background: #fdf3f3;
+    }
+
+    .checks-status {
+      font-weight: 700;
+    }
+
+    .checks-item[data-status="ok"] .checks-status {
+      color: #1f7a3a;
+    }
+
+    .checks-item[data-status="fail"] .checks-status {
+      color: var(--danger);
+    }
+
+    .checks-total {
+      margin-top: 12px;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <h1>Проверки ПР4</h1>
+    <p class="page-subtitle">Браузерные сценарии для формы, хранения и регрессии ПР3</p>
+  </header>
+
+  <main class="page-main">
+    <section class="panel">
+      <div class="checks-toolbar">
+        <button type="button" id="checks-run">Запустить проверки</button>
+        <button type="button" id="checks-clear">Очистить ключи проверок</button>
+      </div>
+      <ul id="checks-list" class="checks-list"></ul>
+      <p id="checks-total" class="checks-total"></p>
+    </section>
+  </main>
+
+  <script type="module">
+    const list = document.querySelector("#checks-list");
+    const total = document.querySelector("#checks-total");
+    const runBtn = document.querySelector("#checks-run");
+    const clearBtn = document.querySelector("#checks-clear");
+
+    function renderItem(name, status, message = "") {
+      const li = document.createElement("li");
+      li.className = "checks-item";
+      li.dataset.status = status;
+      const statusEl = document.createElement("span");
+      statusEl.className = "checks-status";
+      statusEl.textContent = status === "ok" ? "OK" : "FAIL";
+      const body = document.createElement("span");
+      body.textContent = message ? `${name} — ${message}` : name;
+      li.append(statusEl, body);
+      return li;
+    }
+
+    async function runChecks() {
+      list.replaceChildren();
+      total.textContent = "";
+
+      let passed = 0;
+      let failed = 0;
+
+      const report = (name, ok, message) => {
+        if (ok) passed += 1;
+        else failed += 1;
+        list.append(renderItem(name, ok ? "ok" : "fail", message ?? ""));
+      };
+
+      report("Страница проверок загружена", true, "");
+
+      try {
+        const module = await import("./checks/browser.checks.js");
+        if (typeof module.runBrowserChecks === "function") {
+          const results = await module.runBrowserChecks();
+          if (Array.isArray(results)) {
+            for (const item of results) {
+              report(item.name ?? "Сценарий", Boolean(item.ok), item.message ?? "");
+            }
+          } else {
+            report("Модуль проверок вернул неожиданный результат", false, String(results));
+          }
+        } else {
+          report("В checks/browser.checks.js нет runBrowserChecks", false, "");
+        }
+      } catch (error) {
+        report(
+          "Не удалось загрузить checks/browser.checks.js",
+          false,
+          error && error.message ? error.message : String(error)
+        );
+      }
+
+      total.textContent = `Всего: ${passed + failed}. Пройдено: ${passed}. Ошибок: ${failed}.`;
+    }
+
+    function clearCheckKeys() {
+      const prefix = "tip-js-practice-04:checks:";
+      for (let i = localStorage.length - 1; i >= 0; i -= 1) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(prefix)) {
+          localStorage.removeItem(key);
+        }
+      }
+    }
+
+    runBtn.addEventListener("click", () => {
+      runChecks();
+    });
+    clearBtn.addEventListener("click", () => {
+      clearCheckKeys();
+      total.textContent = "Ключи проверок удалены.";
+    });
+
+    runChecks();
+  </script>
+</body>
+</html>
